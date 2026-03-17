@@ -44,7 +44,11 @@
   <div class="card" style="padding: 32px 24px; min-height: 380px; display: flex; flex-direction: column;">
     <h2 class="card-title" style="margin-bottom:24px;">Application Status Breakdown</h2>
     <div style="flex: 1; position: relative; width:100%; display:flex; justify-content:center; align-items:center;">
-      <canvas id="statusChart"></canvas>
+      <canvas id="statusChart" 
+              data-applied="{{ stats.applied | default(0) }}"
+              data-interviews="{{ stats.interviews | default(0) }}"
+              data-rejections="{{ stats.rejections | default(0) }}"
+              data-offers="{{ stats.offers | default(0) }}"></canvas>
     </div>
   </div>
 
@@ -79,7 +83,8 @@
       </div>
       {% for rec in recommendations %}
       <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);">
-        <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:{% if rec.score >= 70 %}#10B981{% elif rec.score >= 40 %}#F59E0B{% else %}#EF4444{% endif %};min-width:52px;">{{ rec.score }}%</div>
+        {% set score_class = 'text-success' if rec.score >= 70 else ('text-warning' if rec.score >= 40 else 'text-danger') %}
+        <div class="{{ score_class }}" style="font-family:var(--font-mono);font-size:22px;font-weight:800;min-width:52px;">{{ rec.score }}%</div>
         <div>
           <div style="font-weight:700;font-size:14px;">{{ rec.role }}</div>
           <div style="font-size:12px;color:var(--muted);margin-top:2px;">{{ rec.matches }} skills matched</div>
@@ -100,15 +105,16 @@
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     const legendColor = isLight ? '#475569' : '#94a3b8';
 
+    const canvas = document.getElementById('statusChart');
+    const applied = parseInt(canvas.getAttribute('data-applied')) || 0;
+    const interviews = parseInt(canvas.getAttribute('data-interviews')) || 0;
+    const rejections = parseInt(canvas.getAttribute('data-rejections')) || 0;
+    const offers = parseInt(canvas.getAttribute('data-offers')) || 0;
+
     const chartData = {
       labels: ['Applied', 'Interview', 'Rejected', 'Offer'],
       datasets: [{
-        data: [
-          {{ stats.applied | default(0) }},
-          {{ stats.interviews | default(0) }},
-          {{ stats.rejections | default(0) }},
-          {{ stats.offers | default(0) }}
-        ],
+        data: [applied, interviews, rejections, offers],
         backgroundColor: [
           '#3B82F6',
           '#F59E0B',
