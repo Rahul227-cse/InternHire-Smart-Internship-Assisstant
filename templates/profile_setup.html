@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Profile Setup — InternHire{% endblock %}
+{% block content %}
+<div class="auth-card" style="max-width:520px;">
+  <div class="auth-logo">
+    <div class="logo-icon">⬡</div>
+    <div class="logo-text">
+      <span class="logo-name">InternHire</span>
+      <span class="logo-sub">One-time Setup</span>
+    </div>
+  </div>
+  <h1 class="auth-title">Set up your profile</h1>
+  <p class="auth-sub">Tell us about yourself to get personalized recommendations.</p>
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      <label class="form-label">{{ form.full_name.label.text }}</label>
+      {{ form.full_name(class="form-control", placeholder="John Doe") }}
+      {% for e in form.full_name.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">{{ form.college.label.text }}</label>
+        {{ form.college(class="form-control", placeholder="Your college") }}
+        {% for e in form.college.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ form.branch.label.text }}</label>
+        {{ form.branch(class="form-control", placeholder="e.g. CSE") }}
+        {% for e in form.branch.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+    <div class="form-grid-2">
+      <div class="form-group">
+        <label class="form-label">{{ form.year_of_study.label.text }}</label>
+        {{ form.year_of_study(class="form-control") }}
+      </div>
+      <div class="form-group">
+        <label class="form-label">{{ form.target_role.label.text }}</label>
+        {{ form.target_role(class="form-control", placeholder="e.g. Backend Developer") }}
+        {% for e in form.target_role.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ form.github_link.label.text }}</label>
+      {{ form.github_link(class="form-control", placeholder="https://github.com/you") }}
+      {% for e in form.github_link.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ form.linkedin_link.label.text }}</label>
+      {{ form.linkedin_link(class="form-control", placeholder="https://linkedin.com/in/you") }}
+      {% for e in form.linkedin_link.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Save & Go to Dashboard →</button>
+  </form>
+</div>
+{% endblock %}

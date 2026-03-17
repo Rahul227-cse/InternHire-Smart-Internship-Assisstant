@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}Skills — InternHire{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Skills</h1>
+  <p class="page-sub">{{ skills|length }} skill{{ 's' if skills|length != 1 else '' }} in your profile</p>
+</div>
+
+<!-- Detected skills from resume -->
+{% if detected_skills %}
+<div class="detected-panel">
+  <p class="detected-title">⚡ {{ detected_skills|length }} new skill{{ 's' if detected_skills|length != 1 else '' }} detected from your resume — review and add below</p>
+  <form method="POST" action="{{ url_for('routes.add_extracted_skills') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <input type="hidden" name="skills_to_add" value='{{ detected_skills | tojson }}'>
+    <div class="skill-pills" style="margin-bottom:14px;">
+      {% for s in detected_skills %}
+        <span class="skill-pill" style="border-color:rgba(99,102,241,.4);color:#a5b4fc;">{{ s }}</span>
+      {% endfor %}
+    </div>
+    <div class="gap-row">
+      <button type="submit" class="btn btn-primary btn-sm">Add All to Profile</button>
+      <a href="{{ url_for('routes.skills') }}" class="btn btn-ghost btn-sm">Dismiss</a>
+    </div>
+  </form>
+</div>
+{% endif %}
+
+<div class="two-col">
+  <div>
+    <!-- Add skill -->
+    <div class="card" style="margin-bottom:20px;">
+      <h3 class="card-title">Add Skill</h3>
+      <form method="POST">
+        {{ form.hidden_tag() }}
+        <div class="gap-row">
+          {{ form.name(class="form-control", placeholder="e.g. React, Docker, Python...", id="skill-input", autocomplete="off") }}
+          <button type="submit" class="btn btn-primary" style="white-space:nowrap;">Add Skill</button>
+        </div>
+        {% for e in form.name.errors %}<p class="form-error mt-1">{{ e }}</p>{% endfor %}
+      </form>
+    </div>
+
+    <!-- Your skills -->
+    <div class="card">
+      <h3 class="card-title">Your Skills</h3>
+      {% if skills %}
+      <div class="skill-pills">
+        {% for skill in skills %}
+        <span class="skill-pill">
+          {{ skill.name }}
+          <form method="POST" action="{{ url_for('routes.delete_skill', skill_id=skill.id) }}" style="display:inline;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="del-btn" title="Remove">×</button>
+          </form>
+        </span>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="empty-state" style="padding:24px 0;">
+        <div class="empty-icon">◈</div>
+        <p class="empty-text">No skills yet.</p>
+        <p class="empty-sub">Add skills manually or upload your resume below.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <!-- Upload resume -->
+    <div class="card">
+      <h3 class="card-title">Upload Resume</h3>
+      <p class="text-muted text-sm" style="margin-bottom:16px;">Auto-extract skills from your PDF resume.</p>
+      <form method="POST" action="{{ url_for('routes.upload_resume') }}" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label class="upload-zone" for="resume-input">
+          <div class="upload-icon">📄</div>
+          <div class="upload-text" id="upload-label">Click to select PDF</div>
+          <div class="upload-sub">or drag and drop</div>
+        </label>
+        <input type="file" name="resume" id="resume-input" accept=".pdf" style="display:none;">
+        <button type="submit" class="btn btn-ghost" style="width:100%;margin-top:12px;justify-content:center;">Extract Skills →</button>
+      </form>
+    </div>
+
+    <!-- Suggested skills -->
+    <div class="card">
+      <h3 class="card-title">Suggested Skills</h3>
+      <p class="text-muted text-sm" style="margin-bottom:14px;">Click to add instantly</p>
+      <div class="skill-pills">
+        {% set user_skill_names = skills | map(attribute='name') | map('lower') | list %}
+        {% set all_skills = ['Python','Java','C++','JavaScript','HTML','CSS','React','Angular','Vue','Node.js','Express','Django','Flask','Spring Boot','SQL','MySQL','PostgreSQL','MongoDB','Docker','Kubernetes','AWS','Azure','GCP','Git','Machine Learning','Data Science','Pandas','NumPy','TensorFlow'] %}
+        {% for s in all_skills %}
+          {% if s.lower() not in user_skill_names %}
+          <form method="POST" style="display:inline;">
+            {{ form.hidden_tag() }}
+            <input type="hidden" name="name" value="{{ s }}">
+            <button type="submit" class="skill-tag-suggested">+ {{ s }}</button>
+          </form>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

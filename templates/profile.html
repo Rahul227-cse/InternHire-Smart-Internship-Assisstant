@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Profile — InternHire{% endblock %}
+{% block content %}
+
+<div class="header-row">
+  <h1 class="page-title">Profile</h1>
+  <a href="{{ url_for('routes.edit_profile') }}" class="btn btn-ghost">Edit Profile</a>
+</div>
+
+{% if current_user.profile %}
+{% set p = current_user.profile %}
+<div class="profile-header">
+  <div class="profile-avatar">{{ p.full_name[0].upper() }}</div>
+  <div>
+    <div class="profile-name">{{ p.full_name }}</div>
+    <div class="profile-meta">{{ p.college }} · {{ p.branch }} · Year {{ p.year_of_study }}</div>
+    <div class="profile-meta" style="margin-top:4px;">🎯 {{ p.target_role }}</div>
+  </div>
+  <div style="margin-left:auto;display:flex;gap:10px;">
+    {% if p.github_link %}
+      <a href="{{ p.github_link }}" target="_blank" class="btn btn-ghost btn-sm">GitHub →</a>
+    {% endif %}
+    {% if p.linkedin_link %}
+      <a href="{{ p.linkedin_link }}" target="_blank" class="btn btn-ghost btn-sm">LinkedIn →</a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="profile-grid" style="margin-bottom:24px;">
+  <div class="card profile-item">
+    <label>College</label><p>{{ p.college }}</p>
+  </div>
+  <div class="card profile-item">
+    <label>Branch</label><p>{{ p.branch }}</p>
+  </div>
+  <div class="card profile-item">
+    <label>Year of Study</label><p>{{ p.year_of_study }}{% if p.year_of_study.isdigit() %} Year{% endif %}</p>
+  </div>
+  <div class="card profile-item">
+    <label>Target Role</label><p>{{ p.target_role }}</p>
+  </div>
+</div>
+
+<!-- Resume Upload -->
+<div class="card">
+  <h3 class="card-title">Upload Resume</h3>
+  <p class="text-muted text-sm" style="margin-bottom:16px;">Upload your PDF resume to auto-extract skills.</p>
+  <form method="POST" action="{{ url_for('routes.upload_resume') }}" enctype="multipart/form-data">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="gap-row">
+      <label class="upload-zone" for="resume-input" style="flex:1;padding:16px 20px;text-align:left;display:flex;align-items:center;gap:12px;">
+        <span style="font-size:22px;">📄</span>
+        <div>
+          <div class="upload-text" id="upload-label">Click to select PDF resume</div>
+          <div class="upload-sub">Skills will be auto-extracted</div>
+        </div>
+      </label>
+      <input type="file" name="resume" id="resume-input" accept=".pdf" style="display:none;">
+      <button type="submit" class="btn btn-primary">Extract Skills →</button>
+    </div>
+  </form>
+</div>
+
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">◉</div>
+    <p class="empty-text">Profile not set up yet.</p>
+    <a href="{{ url_for('auth.profile_setup') }}" class="btn btn-primary">Set Up Profile →</a>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

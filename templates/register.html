@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}Register — InternHire{% endblock %}
+{% block auth_content %}
+<div class="auth-card">
+  <a href="/" class="auth-logo" style="text-decoration:none; color:inherit; display:flex;">
+    <div class="logo-icon" style="background: linear-gradient(135deg, #7C3AED, #4F46E5); color: white; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><i data-lucide="graduation-cap" style="width:20px; height:20px;"></i></div>
+    <div class="logo-text" style="display:flex; flex-direction:column; justify-content:center;">
+      <span class="logo-name" style="font-weight: 800; font-size: 16px; letter-spacing: -0.02em; background: linear-gradient(135deg, #a5b4fc, #c084fc); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">InternHire</span>
+      <span class="logo-sub" style="font-size: 10px; color: var(--muted2); letter-spacing: 0.1em; text-transform: uppercase;">Career Tracker</span>
+    </div>
+  </a>
+  <h1 class="auth-title">Create your account</h1>
+  <p class="auth-sub">Start tracking your internship journey today.</p>
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+      <label class="form-label">{{ form.username.label.text }}</label>
+      {{ form.username(class="form-control", placeholder="choose a username") }}
+      {% for e in form.username.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ form.password.label.text }}</label>
+      {{ form.password(class="form-control", placeholder="••••••••") }}
+      {% for e in form.password.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ form.confirm_password.label.text }}</label>
+      {{ form.confirm_password(class="form-control", placeholder="••••••••") }}
+      {% for e in form.confirm_password.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+    </div>
+    <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Create Account →</button>
+  </form>
+
+  <p class="auth-footer">Already have an account? <a href="{{ url_for('auth.login') }}" class="auth-link">Sign in</a></p>
+</div>
+{% endblock %}

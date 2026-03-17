@@ -1,0 +1,333 @@
+{% extends "base.html" %}
+{% block title %}Learning Paths — InternHire{% endblock %}
+{% block content %}
+
+<div class="page-header header-row" style="margin-bottom:24px;">
+  <div>
+    <h1 class="page-title">Learning Paths</h1>
+    <p class="page-sub">Your generated learning roadmaps based on job analyses.</p>
+  </div>
+  <a href="{{ url_for('routes.job_analyzer') }}" class="btn btn-primary btn-sm">Generate New +</a>
+</div>
+
+<!-- Toast Container -->
+<div id="toast-container" class="toast-container"></div>
+
+{% if paths %}
+  <div style="display:grid; grid-template-columns: repeat(auto-fill, minmax(460px, 1fr)); gap: 24px;">
+    {% for path in paths %}
+      <div class="card lp-card" id="lp-card-{{ path.id }}">
+
+        <!-- Card Header -->
+        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:16px;">
+          <div style="display:flex; gap:14px; align-items:center;">
+            <div class="app-avatar" style="width:48px; height:48px; border-radius:14px; font-size:20px;">
+              {{ path.company[0]|upper if path.company else '💼' }}
+            </div>
+            <div>
+              <h3 style="font-size:17px; font-weight:800; line-height:1.2;">{{ path.company }}</h3>
+              <p style="font-size:14px; color:var(--muted); margin-top:2px;">{{ path.role }}</p>
+              <p style="font-size:12px; color:var(--muted2); margin-top:4px;">{{ path.created_at.strftime('%b %d, %Y') if path.created_at else '' }}</p>
+            </div>
+          </div>
+
+          <form method="POST" action="{{ url_for('routes.delete_learning_path', path_id=path.id) }}" style="margin:0;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-ghost btn-sm lp-delete-btn" title="Delete Path"
+              onclick="return confirm('Delete this learning path?')">
+              <i data-lucide="x" width="15" height="15"></i>
+            </button>
+          </form>
+        </div>
+
+        <!-- Readiness Score -->
+        <div class="readiness-box" style="display:flex; justify-content:space-between; align-items:center; background:var(--surface2); padding:12px 16px; border-radius:12px; margin-bottom:16px;">
+          <div>
+            <p class="lp-section-label" style="margin:0;">Internship Readiness</p>
+            <p style="font-size:12px; color:var(--muted); margin-top:2px;">Based on skills & progress</p>
+          </div>
+          <div class="readiness-score-ring" style="font-size:22px; font-weight:800; color:{% if path.readiness_score >= 70 %}var(--green){% elif path.readiness_score >= 40 %}var(--yellow){% else %}var(--red){% endif %}; font-family:var(--font-mono);">
+            {{ path.readiness_score }}%
+          </div>
+        </div>
+
+        <div class="divider" style="margin: 10px 0 16px;"></div>
+
+        <!-- Missing Skills -->
+        {% if path.missing_skills %}
+        <div style="margin-bottom:16px;">
+          <p class="lp-section-label">Missing Skills to Learn</p>
+          <div class="skill-pills">
+            {% for skill in path.missing_skills %}
+              <span class="missing-tag" style="margin:0;">{{ skill }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Progress indicator -->
+        <div class="lp-progress-section" id="lp-progress-section-{{ path.id }}">
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+            <p class="lp-section-label" style="margin:0;">Learning Progress</p>
+            <span class="lp-progress-label" id="lp-progress-label-{{ path.id }}">
+              {{ path.completed_count }} / {{ path.total_steps }} Steps Completed
+            </span>
+          </div>
+          <div class="lp-progress-bar-wrap">
+            <div class="lp-progress-bar-fill" id="lp-progress-bar-{{ path.id }}"
+              style="width: {% if path.total_steps > 0 %}{{ ((path.completed_count / path.total_steps) * 100)|round|int }}{% else %}0{% endif %}%;">
+            </div>
+          </div>
+          <div style="text-align:right; margin-top:5px;">
+            <span class="lp-progress-pct" id="lp-progress-pct-{{ path.id }}">
+              {% if path.total_steps > 0 %}{{ ((path.completed_count / path.total_steps) * 100)|round|int }}%{% else %}0%{% endif %}
+            </span>
+          </div>
+        </div>
+
+        <!-- Learning Roadmap steps -->
+        <div style="flex:1; margin-top: 4px;">
+          <p class="lp-section-label">Learning Roadmap</p>
+          <div class="lp-steps-container">
+            {% for step in path.learning_steps %}
+              {% set step_idx = loop.index0 %}
+              {% set is_done = step_idx in path.completed_steps %}
+              <div class="learning-step {% if is_done %}completed{% endif %}"
+                   id="lp-step-{{ path.id }}-{{ step_idx }}"
+                   style="{% if loop.last %}border-bottom:none; padding-bottom:0;{% endif %} {% if loop.first %}padding-top:0;{% endif %}">
+
+                <!-- Circular completion button -->
+                <button class="step-complete-btn {% if is_done %}done{% endif %}"
+                        onclick="toggleStep({{ path.id }}, {{ step_idx }}, this)"
+                        title="{% if is_done %}Mark as incomplete{% else %}Mark as complete{% endif %}"
+                        aria-label="Toggle step completion">
+                  <span class="step-complete-check">
+                    <i data-lucide="check" width="12" height="12"></i>
+                  </span>
+                  <span class="step-complete-num">{{ loop.index }}</span>
+                </button>
+
+                <div class="step-text-container" style="flex:1;">
+                  <div class="step-next-badge" style="display:none;font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px;display:flex;align-items:center;gap:4px;">
+                    ⭐ NEXT STEP
+                  </div>
+                  <div class="step-text">
+                    {{ step | replace('Step ' ~ loop.index ~ ': ', '') }}
+                  </div>
+                </div>
+              </div>
+            {% else %}
+              <p class="text-muted text-sm">No specific steps generated.</p>
+            {% endfor %}
+          </div>
+        </div>
+
+      </div>
+    {% endfor %}
+  </div>
+{% else %}
+  <div class="card" style="padding:60px 40px; text-align:center;">
+    <div class="empty-state" style="padding:0;">
+      <div class="empty-icon">📚</div>
+      <p class="empty-text">No Learning Paths Yet</p>
+      <p class="empty-sub" style="margin-bottom:24px;">Analyze a job description to generate a personalized learning roadmap.</p>
+      <a href="{{ url_for('routes.job_analyzer') }}" class="btn btn-primary">Go to Job Analyzer →</a>
+    </div>
+  </div>
+{% endif %}
+
+<!-- Completion Modal -->
+<div id="completion-modal" class="modal-overlay">
+  <div class="modal-container">
+    <div class="completion-title">🎉 Learning Path Completed!</div>
+    <p class="completion-sub">You've mastered the roadmap for <strong id="modal-role"></strong></p>
+    
+    <p class="lp-section-label" style="text-align:center; margin-bottom:12px;">Skills you learned:</p>
+    <div class="learned-skills-list" id="modal-skills">
+      <!-- To be populated by JS -->
+    </div>
+    
+    <p class="completion-sub" style="margin-bottom:24px;">Do you want to add these skills to your profile?</p>
+    
+    <div class="completion-actions">
+      <input type="hidden" id="modal-path-id">
+      <button class="btn btn-primary" id="modal-add-btn">Add Skills to Profile</button>
+      <button class="btn btn-ghost" onclick="closeModal()">Skip</button>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+  function updateNextStepUI(pathId) {
+    // Find all step elements for this path
+    const container = document.querySelector('#lp-card-' + pathId + ' .lp-steps-container');
+    if (!container) return;
+    const steps = container.querySelectorAll('.learning-step');
+    let nextStepFound = false;
+    
+    steps.forEach(step => {
+      // Remove any previous highlight
+      step.classList.remove('next-step-highlight');
+      const badge = step.querySelector('.step-next-badge');
+      if (badge) badge.style.display = 'none';
+
+      // Find the first one that is NOT completed
+      if (!nextStepFound && !step.classList.contains('completed')) {
+        step.classList.add('next-step-highlight');
+        if (badge) badge.style.display = 'flex';
+        nextStepFound = true;
+      }
+    });
+  }
+
+  // Initialize Next Step highlights on page load
+  document.addEventListener("DOMContentLoaded", function() {
+    {% for path in paths %}
+      updateNextStepUI({{ path.id }});
+      
+      // Auto-show modal if already completed but skills not added
+      {% if path.completed_count == path.total_steps and not path.all_skills_added %}
+        showCompletionModal({{ path.id }}, "{{ path.role }}", {{ path.missing_skills|tojson }});
+      {% endif %}
+    {% endfor %}
+    // Re-trigger lucide icons just in case
+    if (window.lucide) lucide.createIcons();
+    
+    // Bind modal add button
+    document.getElementById('modal-add-btn').onclick = function() {
+      const pathId = document.getElementById('modal-path-id').value;
+      addSkillsFromPath(pathId);
+    };
+  });
+
+  function showCompletionModal(pathId, role, skills) {
+    document.getElementById('modal-path-id').value = pathId;
+    document.getElementById('modal-role').textContent = role;
+    const skillsContainer = document.getElementById('modal-skills');
+    skillsContainer.innerHTML = skills.map(s => `<span class="learned-skill-tag">${s}</span>`).join('');
+    document.getElementById('completion-modal').style.display = 'flex';
+  }
+
+  function closeModal() {
+    document.getElementById('completion-modal').style.display = 'none';
+  }
+
+  function toggleStep(pathId, stepIndex, btn) {
+    fetch('/toggle_step_completion', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ learning_path_id: pathId, step_id: stepIndex })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+
+      const stepEl = document.getElementById('lp-step-' + pathId + '-' + stepIndex);
+      const btnEl = stepEl.querySelector('.step-complete-btn');
+
+      if (data.completed) {
+        btnEl.classList.add('done');
+        stepEl.classList.add('completed');
+        btnEl.title = 'Mark as incomplete';
+      } else {
+        btnEl.classList.remove('done');
+        stepEl.classList.remove('completed');
+        btnEl.title = 'Mark as complete';
+      }
+
+      // Update progress
+      const total = data.total;
+      const done  = data.completed_count;
+      const pct   = total > 0 ? Math.round((done / total) * 100) : 0;
+
+      const labelEl = document.getElementById('lp-progress-label-' + pathId);
+      const barEl   = document.getElementById('lp-progress-bar-' + pathId);
+      const pctEl   = document.getElementById('lp-progress-pct-' + pathId);
+
+      if (labelEl) labelEl.textContent = done + ' / ' + total + ' Steps Completed';
+      if (barEl)   barEl.style.width   = pct + '%';
+      if (pctEl)   pctEl.textContent   = pct + '%';
+      
+      // Update Next Step Highlighting
+      updateNextStepUI(pathId);
+
+      // Handle Completion Modal
+      if (pct === 100 && data.missing_skills.length > 0) {
+        // Fetch role name from card header
+        const cardHeader = document.querySelector('#lp-card-' + pathId + ' h3');
+        const roleHeader = document.querySelector('#lp-card-' + pathId + ' .page-sub') || document.querySelector('#lp-card-' + pathId + ' p');
+        const roleName = roleHeader ? roleHeader.textContent : "Internship";
+        
+        showCompletionModal(pathId, roleName, data.missing_skills);
+      }
+    })
+    .catch(err => console.error('Toggle step error:', err));
+  }
+
+  function addSkillsFromPath(pathId) {
+    fetch('/add_skills_from_path', {
+      method: 'POST',
+      headers: { 
+        'Content-Type': 'application/json',
+        'X-CSRFToken': '{{ csrf_token() }}'
+      },
+      body: JSON.stringify({ path_id: pathId })
+    })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.success) return;
+      
+      closeModal();
+      
+      // Update readiness score in UI
+      const cardEl = document.getElementById('lp-card-' + pathId);
+      const ring = cardEl.querySelector('.readiness-score-ring');
+      let oldReadiness = "";
+      if (ring) {
+        oldReadiness = ring.textContent.trim().replace('%', '');
+        ring.textContent = data.new_readiness + '%';
+        ring.style.color = 'var(--green)';
+      }
+      
+      // Show success toast
+      const toastMsg = oldReadiness ? `Readiness increased from ${oldReadiness}% → ${data.new_readiness}%` : `Readiness increased to ${data.new_readiness}%`;
+      showToast(`+${data.added_count} ${data.added_count === 1 ? 'Skill' : 'Skills'} Added`, toastMsg);
+    })
+    .catch(err => console.error('Add skills error:', err));
+  }
+
+  function skipCompletion(pathId) {
+    closeModal();
+  }
+
+  function showToast(title, message) {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = 'toast';
+    toast.innerHTML = `
+      <div class="toast-icon"><i data-lucide="check" width="20" height="20"></i></div>
+      <div class="toast-content">
+        <div class="toast-title">${title}</div>
+        <div class="toast-msg">${message}</div>
+      </div>
+    `;
+    container.appendChild(toast);
+    
+    if (window.lucide) lucide.createIcons();
+    
+    // Auto remove
+    setTimeout(() => {
+      toast.style.opacity = '0';
+      toast.style.transform = 'translateY(-10px)';
+      toast.style.transition = 'all 0.3s ease';
+      setTimeout(() => toast.remove(), 300);
+    }, 4000);
+  }
+</script>
+{% endblock %}

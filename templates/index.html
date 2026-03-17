@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InternHire – Smart Internship Assistant</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Vercel-inspired Palette refined with Vibrant Midnight */
+            --bg: #0B112B;
+            --fg: #ffffff;
+            --accents-1: #121A3A;
+            --accents-2: #1D264F;
+            --accents-3: #2A3669;
+            --accents-4: #666;
+            --accents-5: #888;
+            --accents-6: #999;
+            --accents-7: #eaeaea;
+            --accents-8: #fafafa;
+            
+            --primary: #6366F1;
+            --primary-light: #818CF8;
+            --success: #0070f3;
+            --error: #ee0000;
+            --warning: #f5a623;
+            
+            --geist-foreground: #fff;
+            --geist-background: #0B112B;
+            --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", "Roboto", "Oxygen", "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue", sans-serif;
+        }
+
+        [data-theme="light"] {
+            --bg: #ffffff;
+            --fg: #000000;
+            --accents-1: #f3f4f6;
+            --accents-2: #e5e7eb;
+            --accents-3: #d1d5db;
+            --accents-4: #9ca3af;
+            --accents-5: #6b7280;
+            --accents-6: #4b5563;
+            --accents-7: #374151;
+            --accents-8: #111827;
+            --primary: #4F46E5;
+            --geist-foreground: #000;
+            --geist-background: #fff;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--bg);
+            color: var(--fg);
+            overflow-x: hidden;
+            transition: background 0.5s ease;
+        }
+
+        /* Mesh Gradient Background */
+        .mesh-gradient {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: -1;
+            overflow: hidden;
+            filter: blur(100px);
+            opacity: 0.5;
+            pointer-events: none;
+        }
+
+        .mesh-ball {
+            position: absolute;
+            border-radius: 50%;
+            animation: move 25s infinite alternate ease-in-out;
+        }
+
+        .ball-1 { width: 600px; height: 600px; background: rgba(99, 102, 241, 0.4); top: -100px; left: -100px; }
+        .ball-2 { width: 500px; height: 500px; background: rgba(59, 130, 246, 0.3); bottom: -100px; right: -100px; animation-delay: -5s; }
+        .ball-3 { width: 400px; height: 400px; background: rgba(139, 92, 246, 0.3); top: 40%; left: 30%; animation-delay: -10s; }
+
+        @keyframes move {
+            0% { transform: translate(0, 0) scale(1); }
+            50% { transform: translate(100px, 50px) scale(1.1); }
+            100% { transform: translate(-50px, -100px) scale(0.9); }
+        }
+
+        /* Navbar */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 16px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 1000;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid transparent;
+        }
+
+        .navbar.scrolled {
+            padding: 12px 40px;
+            background: rgba(var(--bg), 0.7);
+            border-bottom: 1px solid var(--accents-2);
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+            color: var(--fg);
+            font-weight: 700;
+            font-size: 20px;
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--fg);
+            color: var(--bg);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .nav-actions { display: flex; align-items: center; gap: 20px; }
+
+        .theme-toggle {
+            background: none;
+            border: none;
+            color: var(--fg);
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 50%;
+            transition: background 0.2s;
+        }
+
+        .theme-toggle:hover { background: var(--accents-2); }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 10px 24px;
+            border-radius: 6px;
+            font-weight: 500;
+            font-size: 14px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+
+        .btn-primary {
+            background: var(--fg);
+            color: var(--bg);
+            border: 1px solid var(--fg);
+        }
+
+        .btn-primary:hover {
+            background: transparent;
+            color: var(--fg);
+        }
+
+        .btn-secondary {
+            color: var(--fg);
+            border: 1px solid var(--accents-2);
+        }
+
+        .btn-secondary:hover {
+            background: var(--accents-1);
+            border-color: var(--accents-3);
+        }
+
+        /* Hero Section */
+        .hero {
+            padding: 160px 24px 80px;
+            text-align: center;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .hero-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accents-2);
+            padding: 6px 16px;
+            border-radius: 99px;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 32px;
+            border: 1px solid var(--accents-3);
+            animation: fade-in 0.8s ease-out;
+        }
+
+        .hero h1 {
+            font-size: clamp(48px, 8vw, 92px);
+            font-weight: 800;
+            line-height: 1;
+            letter-spacing: -0.05em;
+            margin-bottom: 32px;
+            background: linear-gradient(180deg, var(--fg) 50%, var(--accents-5));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: hero-reveal 1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        }
+
+        .hero p {
+            font-size: clamp(18px, 2vw, 22px);
+            color: var(--accents-6);
+            max-width: 700px;
+            margin: 0 auto 48px;
+            line-height: 1.5;
+            animation: fade-in 1s ease-out 0.2s forwards;
+            opacity: 0;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 16px;
+            justify-content: center;
+            animation: fade-in 1s ease-out 0.4s forwards;
+            opacity: 0;
+        }
+
+        .hero-actions .btn { padding: 14px 32px; font-size: 16px; border-radius: 8px; }
+
+        @keyframes hero-reveal {
+            from { transform: translateY(40px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+
+        @keyframes fade-in {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Bento Grid */
+        .section-title {
+            text-align: center;
+            font-size: 42px;
+            font-weight: 800;
+            letter-spacing: -0.04em;
+            margin-bottom: 60px;
+        }
+
+        .bento-container {
+            max-width: 1200px;
+            margin: 0 auto 120px;
+            padding: 0 24px;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .bento-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--accents-2);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 40px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            min-height: 300px;
+            transition: all 0.3s ease;
+        }
+
+        .bento-card:hover {
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.05);
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3), 0 0 20px rgba(99, 102, 241, 0.2);
+        }
+
+        .bento-card i {
+            position: relative;
+            top: 0;
+            left: 0;
+            width: 32px;
+            height: 32px;
+            color: var(--primary);
+            margin-bottom: 24px;
+        }
+
+        .bento-card h3 { font-size: 24px; font-weight: 700; margin-bottom: 12px; letter-spacing: -0.02em; color: var(--fg); }
+        .bento-card p { color: var(--accents-5); line-height: 1.5; font-size: 15px; }
+
+        /* Unified grid items */
+        .bento-1, .bento-2, .bento-3, .bento-4 { grid-column: span 1; }
+
+        .reveal {
+            opacity: 0;
+            transform: translateY(30px);
+            transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Footer */
+        .footer {
+            padding: 80px 40px;
+            border-top: 1px solid var(--accents-2);
+            text-align: center;
+        }
+
+        .footer-logo { margin-bottom: 24px; justify-content: center; }
+        .footer-text { color: var(--accents-4); font-size: 14px; }
+
+        @media (max-width: 860px) {
+            .bento-container { grid-template-columns: 1fr; grid-template-rows: auto; }
+            .bento-1, .bento-4 { grid-column: span 1; }
+            .hero h1 { font-size: 48px; }
+            .navbar { padding: 16px 20px; }
+        }
+    </style>
+</head>
+<body class="landing-page">
+
+    <div class="mesh-gradient">
+        <div class="mesh-ball ball-1"></div>
+        <div class="mesh-ball ball-2"></div>
+        <div class="mesh-ball ball-3"></div>
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar" id="navbar">
+        <a href="/" class="logo">
+            <div class="logo-icon"><i data-lucide="graduation-cap" width="20" height="20"></i></div>
+            <span>InternHire</span>
+        </a>
+        <div class="nav-actions">
+            <button class="theme-toggle" id="themeToggle" title="Toggle Theme">
+                <i data-lucide="moon" id="moon-icon"></i>
+                <i data-lucide="sun" id="sun-icon" style="display:none;"></i>
+            </button>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Login</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Sign Up</a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-badge">
+            <i data-lucide="sparkles" width="14" height="14"></i>
+            <span>The AI-Powered Internship Assistant</span>
+        </div>
+        <h1>Internship search,<br>solved with AI.</h1>
+        <p>Track applications, analyze skill gaps, and generate personalized learning roadmaps. All in one unified workspace.</p>
+        <div class="hero-actions">
+            <a href="{{ url_for('auth.register') }}" class="btn btn-primary">Start Building Free</a>
+            <a href="{{ url_for('auth.login') }}" class="btn btn-secondary">Sign In</a>
+        </div>
+    </section>
+
+    <!-- Bento Features -->
+    <section class="features">
+        <h2 class="section-title reveal">Engineered for your success.</h2>
+        <div class="bento-container">
+            <div class="bento-card bento-1 reveal">
+                <i data-lucide="layout-dashboard"></i>
+                <h3>Internship Tracker</h3>
+                <p>A high-performance command center for your entire hunt. Manage statuses, interviews, and offers with ease.</p>
+            </div>
+            <div class="bento-card bento-2 reveal">
+                <i data-lucide="scan-search"></i>
+                <h3>Skill Gap Analyzer</h3>
+                <p>Compare your profile against jobs and uncover missing skills instantly.</p>
+            </div>
+            <div class="bento-card bento-3 reveal">
+                <i data-lucide="target"></i>
+                <h3>Readiness Score</h3>
+                <p>AI-driven quantification of your preparedness for any role.</p>
+            </div>
+            <div class="bento-card bento-4 reveal">
+                <i data-lucide="map"></i>
+                <h3>Dynamic Learning Roadmaps</h3>
+                <p>Automatically generated, step-by-step paths to bridge your skill gaps and land that dream role.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer reveal">
+        <a href="/" class="logo footer-logo">
+            <div class="logo-icon"><i data-lucide="graduation-cap" width="16" height="16"></i></div>
+            <span>InternHire</span>
+        </a>
+        <p class="footer-text">© 2026 InternHire. Built for the next generation of engineers.</p>
+    </footer>
+
+    <script>
+        lucide.createIcons();
+
+        // Navbar Scroll Effect
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            if (window.scrollY > 20) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Theme Toggle
+        const themeToggle = document.getElementById('themeToggle');
+        const sunIcon = document.getElementById('sun-icon');
+        const moonIcon = document.getElementById('moon-icon');
+        
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            if (theme === 'dark') {
+                sunIcon.style.display = 'block';
+                moonIcon.style.display = 'none';
+            } else {
+                sunIcon.style.display = 'none';
+                moonIcon.style.display = 'block';
+            }
+        }
+
+        themeToggle.addEventListener('click', () => {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'dark';
+            setTheme(currentTheme === 'dark' ? 'light' : 'dark');
+        });
+
+        // Init theme
+        const savedTheme = localStorage.getItem('theme') || 'dark';
+        setTheme(savedTheme);
+
+        // Scroll Reveal
+        function reveal() {
+            const reveals = document.querySelectorAll(".reveal");
+            for (let i = 0; i < reveals.length; i++) {
+                const windowHeight = window.innerHeight;
+                const elementTop = reveals[i].getBoundingClientRect().top;
+                const elementVisible = 150;
+                if (elementTop < windowHeight - elementVisible) {
+                    reveals[i].classList.add("active");
+                }
+            }
+        }
+        window.addEventListener("scroll", reveal);
+         reveal(); // Initial check
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+*.pyc
+.env
+instance/
+*.db
+.gemini/
+.agent/
+.agents/
+brain/
+*.log

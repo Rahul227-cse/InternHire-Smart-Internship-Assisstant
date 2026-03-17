@@ -1,0 +1,334 @@
+{% extends "base.html" %}
+{% block title %}Applications — InternHire{% endblock %}
+{% block content %}
+
+<div class="header-row">
+  <div>
+    <h1 class="page-title">Applications</h1>
+    <p class="page-sub">{{ applications|length }} application{{ 's' if applications|length != 1 else '' }} tracked</p>
+  </div>
+  <button class="btn btn-primary" onclick="document.getElementById('add-form').style.display=document.getElementById('add-form').style.display==='none'?'block':'none'">+ Add Application</button>
+</div>
+
+<!-- Add Form -->
+<div id="add-form" style="display:none;" class="card" style="margin-bottom:20px;">
+  <h3 class="card-title" style="color:#a5b4fc;">New Application</h3>
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-grid-4" style="margin-bottom:14px;">
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">{{ form.company_name.label.text }}</label>
+        {{ form.company_name(class="form-control", placeholder="Google, Amazon...") }}
+        {% for e in form.company_name.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">{{ form.role.label.text }}</label>
+        {{ form.role(class="form-control", placeholder="SWE Intern") }}
+        {% for e in form.role.errors %}<p class="form-error">{{ e }}</p>{% endfor %}
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">{{ form.status.label.text }}</label>
+        {{ form.status(class="form-control") }}
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label class="form-label">{{ form.deadline.label.text }}</label>
+        {{ form.deadline(class="form-control") }}
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">{{ form.rejection_reason.label.text }}</label>
+      {{ form.rejection_reason(class="form-control", style="max-width:300px;") }}
+    </div>
+    <div class="gap-row">
+      <button type="submit" class="btn btn-primary">Save Application</button>
+      <button type="button" class="btn btn-ghost" onclick="document.getElementById('add-form').style.display='none'">Cancel</button>
+    </div>
+  </form>
+</div>
+
+<!-- App List -->
+{% if applications %}
+<div class="kanban-board">
+  {% set columns = [
+    ('Applied', 'Applied'),
+    ('Interview Scheduled', 'Interview'),
+    ('Offer Received', 'Offer'),
+    ('Rejected', 'Rejected')
+  ] %}
+  {% for status_val, label in columns %}
+  <div class="kanban-column" data-status="{{ status_val }}" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" ondrop="drop(event)">
+    <div class="kanban-header">
+      <h4 style="margin:0; font-size: 14px; font-weight: 600; color: var(--text);">{{ label }}</h4>
+      <span class="kanban-count" style="font-size: 12px; color: var(--muted); background: var(--surface-hover); padding: 2px 8px; border-radius: 12px;">{{ applications|selectattr('status', 'equalto', status_val)|list|length }}</span>
+        </div>
+    <div class="kanban-cards">
+      {% for app in applications if app.status == status_val %}
+      <div class="kanban-card" draggable="true" ondragstart="drag(event, this)" data-app-id="{{ app.id }}">
+        <div style="display: flex; align-items: center; margin-bottom: 12px;">
+          <div class="app-avatar" style="width: 32px; height: 32px; border-radius: 8px; background: var(--primary-muted); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 600; margin-right: 12px;">{{ app.company_name[0].upper() }}</div>
+          <div>
+            <div style="font-weight: 600; color: var(--text); font-size: 14px;">{{ app.company_name }}</div>
+            <div style="font-size: 12px; color: var(--muted);">{{ app.role }}</div>
+          </div>
+        </div>
+        <div style="margin-bottom: 12px; display: flex; flex-direction: column; gap: 8px;">
+          {% if app.deadline %}
+            <span style="font-size: 12px; color: var(--muted);">⏱ {{ app.deadline.strftime('%b %d, %Y') }}</span>
+          {% endif %}
+          <div class="card-badge-container">
+            {% if app.status == 'Applied' %}
+              <span class="badge badge-applied">◎ Applied</span>
+            {% elif app.status == 'Interview Scheduled' %}
+              <span class="badge badge-interview">◈ Interview Scheduled</span>
+            {% elif app.status == 'Rejected' %}
+              <span class="badge badge-rejected">✕ Rejected</span>
+            {% else %}
+              <span class="badge badge-offer">✓ Offer Received</span>
+            {% endif %}
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+           <select class="form-control" onchange="handleSelectChange(event, '{{ app.id }}')" style="width:100%;font-size:12px;padding:6px;color:var(--text);background:var(--surface);">
+            <option {% if app.status=='Applied' %}selected{% endif %} value="Applied">Applied</option>
+            <option {% if app.status=='Interview Scheduled' %}selected{% endif %} value="Interview Scheduled">Interview Scheduled</option>
+            <option {% if app.status=='Rejected' %}selected{% endif %} value="Rejected">Rejected</option>
+            <option {% if app.status=='Offer Received' %}selected{% endif %} value="Offer Received">Offer</option>
+          </select>
+          <form method="POST" action="{{ url_for('routes.delete_application', app_id=app.id) }}" onsubmit="return confirm('Delete this application?')" style="margin:0;">
+            {{ form.hidden_tag() }}
+            <button type="submit" class="btn btn-ghost btn-sm" style="padding: 6px; color: var(--red);">🗑</button>
+          </form>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<style>
+.kanban-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px;
+  overflow-x: auto;
+  padding-bottom: 20px;
+}
+
+/* Base styles (fallbacks) */
+.kanban-column {
+  background: var(--surface);
+  border-radius: 12px;
+  padding: 16px;
+  min-height: 400px;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--border);
+  transition: background 0.2s, border-color 0.2s;
+}
+
+/* Light mode specified column styles */
+:root[data-theme="light"] .kanban-column {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 14px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Dark mode specified column styles */
+:root:not([data-theme="light"]) .kanban-column {
+  background: #131A2B;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.35);
+}
+
+.kanban-column.drag-over {
+  background: var(--surface-hover);
+  border-color: var(--primary);
+}
+
+.kanban-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* Dark mode specified header */
+:root:not([data-theme="light"]) .kanban-header h4 {
+  font-weight: 600;
+  color: #F9FAFB !important; /* Brighter text */
+}
+:root:not([data-theme="light"]) .kanban-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+  padding-bottom: 10px;
+  margin-bottom: 10px;
+}
+
+.kanban-cards {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.kanban-card {
+  padding: 16px;
+  margin-bottom: 12px;
+  cursor: grab;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 12px;
+}
+
+/* Light mode specific cards */
+:root[data-theme="light"] .kanban-card {
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+/* Dark mode specific cards */
+:root:not([data-theme="light"]) .kanban-card {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+}
+
+.kanban-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  border-color: var(--primary-muted);
+}
+.kanban-card.dragging {
+  opacity: 0.5;
+  transform: scale(0.95);
+}
+</style>
+
+<script>
+let draggedCard = null;
+
+function drag(ev, el) {
+  draggedCard = el;
+  ev.dataTransfer.setData("text", el.getAttribute('data-app-id'));
+  setTimeout(() => el.classList.add('dragging'), 0);
+}
+
+document.addEventListener('dragend', (ev) => {
+  if (draggedCard) {
+    draggedCard.classList.remove('dragging');
+    draggedCard = null;
+  }
+  document.querySelectorAll('.kanban-column').forEach(c => c.classList.remove('drag-over'));
+});
+
+function allowDrop(ev) {
+  ev.preventDefault();
+  const col = ev.currentTarget.closest('.kanban-column');
+  if (col) col.classList.add('drag-over');
+}
+
+function dragLeave(ev) {
+  const col = ev.currentTarget.closest('.kanban-column');
+  if (col && !col.contains(ev.relatedTarget)) {
+    col.classList.remove('drag-over');
+  }
+}
+
+function drop(ev) {
+  ev.preventDefault();
+  const column = ev.currentTarget.closest('.kanban-column');
+  if (!column) return;
+  
+  column.classList.remove('drag-over');
+  const appId = ev.dataTransfer.getData("text");
+  const newStatus = column.getAttribute('data-status');
+  const card = document.querySelector(`.kanban-card[data-app-id='${appId}']`);
+  
+  if (!card) return;
+  const oldCol = card.closest('.kanban-column');
+  if (oldCol === column) return;
+
+  // Move in DOM
+  column.querySelector('.kanban-cards').appendChild(card);
+  
+  // Update select dropdown
+  const select = card.querySelector('select');
+  if (select) select.value = newStatus;
+  
+  updateCardStatus(appId, newStatus, card);
+}
+
+function handleSelectChange(ev, appId) {
+  const newStatus = ev.target.value;
+  const card = ev.target.closest('.kanban-card');
+  const oldCol = card.closest('.kanban-column');
+  const newCol = document.querySelector(`.kanban-column[data-status="${newStatus}"]`);
+  
+  if (newCol && oldCol !== newCol) {
+    newCol.querySelector('.kanban-cards').appendChild(card);
+  }
+  updateCardStatus(appId, newStatus, card);
+}
+
+async function updateCardStatus(appId, newStatus, card) {
+  try {
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+    const res = await fetch('/update_application_status', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': csrfToken
+      },
+      body: JSON.stringify({ application_id: parseInt(appId), status: newStatus })
+    });
+    const data = await res.json();
+    if (data.success) {
+      if (typeof window.showToast === 'function') {
+        window.showToast('Application status updated', 'success');
+      }
+      
+      const badgeContainer = card.querySelector('.card-badge-container');
+      if (badgeContainer) {
+        let badgeClass = '';
+        let badgeText = '';
+        if (newStatus === 'Applied') { badgeClass = 'badge-applied'; badgeText = '◎ Applied'; }
+        else if (newStatus === 'Interview Scheduled') { badgeClass = 'badge-interview'; badgeText = '◈ Interview Scheduled'; }
+        else if (newStatus === 'Rejected') { badgeClass = 'badge-rejected'; badgeText = '✕ Rejected'; }
+        else { badgeClass = 'badge-offer'; badgeText = '✓ Offer Received'; }
+        
+        badgeContainer.innerHTML = `<span class="badge ${badgeClass}">${badgeText}</span>`;
+      }
+      updateKanbanCounts();
+    } else {
+      if (typeof window.showToast === 'function') window.showToast('Failed to update status', 'danger');
+    }
+  } catch(e) {
+    if (typeof window.showToast === 'function') window.showToast('Failed to update status', 'danger');
+  }
+}
+
+function updateKanbanCounts() {
+  document.querySelectorAll('.kanban-column').forEach(col => {
+    const count = col.querySelectorAll('.kanban-card').length;
+    col.querySelector('.kanban-count').textContent = count;
+  });
+}
+</script>
+{% else %}
+<div class="card">
+  <div class="empty-state">
+    <div class="empty-icon">◫</div>
+    <p class="empty-text">No applications yet</p>
+    <p class="empty-sub">Start tracking your internship applications.</p>
+    <button class="btn btn-primary" onclick="document.getElementById('add-form').style.display='block'">Add First Application</button>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

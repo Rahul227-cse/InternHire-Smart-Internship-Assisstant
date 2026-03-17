@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}Job Analyzer — InternHire{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Job Analyzer</h1>
+  <p class="page-sub">Analyze a job description to see your skill match and gap.</p>
+</div>
+
+<div class="two-col" style="grid-template-columns:1.2fr 1fr;">
+  <!-- Input -->
+  <div class="card">
+    <h3 class="card-title">Job Description</h3>
+    <form method="POST" enctype="multipart/form-data">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      {% if applications %}
+      <div class="form-group">
+        <label class="form-label">Link to Application (Optional)</label>
+        <select name="application_id" class="form-control">
+          <option value="">— General Analysis —</option>
+          {% for app in applications %}
+          <option value="{{ app.id }}" {% if selected_app and selected_app.id == app.id %}selected{% endif %}>
+            {{ app.company_name }} — {{ app.role }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="form-group">
+        <label class="form-label">Upload JD as PDF (Optional)</label>
+        <label class="upload-zone" for="jd-pdf" style="padding:16px;">
+          <div class="upload-text" id="jd-label" style="font-size:13px;">Click to select PDF</div>
+        </label>
+        <input type="file" name="job_pdf" id="jd-pdf" accept=".pdf" style="display:none;" onchange="document.getElementById('jd-label').textContent=this.files[0]?.name||'Click to select PDF'">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Or Paste Job Description</label>
+        <textarea name="job_description" class="form-control" rows="10" placeholder="Paste the full job description text here...">{{ request.form.get('job_description', '') }}</textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%;justify-content:center;">Analyze Skills Gap →</button>
+    </form>
+  </div>
+
+  <!-- Results -->
+  <div>
+    {% if analysis %}
+    <!-- Score -->
+    <div class="card" style="margin-bottom:16px;">
+      <div class="score-ring-wrap">
+        {% set score = analysis.match_score | int %}
+        {% set color = '#10B981' if score >= 70 else '#F59E0B' if score >= 40 else '#EF4444' %}
+        {% set r = 30 %}
+        {% set circ = 2 * 3.14159 * r %}
+        <svg width="80" height="80" style="transform:rotate(-90deg);flex-shrink:0;">
+          <circle cx="40" cy="40" r="{{ r }}" fill="none" stroke="#1e2030" stroke-width="7"/>
+          <circle cx="40" cy="40" r="{{ r }}" fill="none" stroke="{{ color }}" stroke-width="7"
+            stroke-dasharray="{{ circ }}" stroke-dashoffset="{{ circ }}"
+            stroke-linecap="round"
+            class="score-ring-circle" data-score="{{ score }}"/>
+          <text x="50%" y="50%" text-anchor="middle" dy="0.35em" fill="{{ color }}"
+            font-size="14" font-weight="800" font-family="Space Mono, monospace"
+            style="transform:rotate(90deg);transform-origin:center;">
+            {{ score }}%
+          </text>
+        </svg>
+        <div class="score-ring-info">
+          <h3>{% if analysis.internship_name != 'General Analysis' %}{{ analysis.internship_name }}{% else %}Match Score{% endif %}</h3>
+          <p>{{ analysis.matching_skills|length }} of {{ analysis.required_skills|length }} required skills matched</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Matching -->
+    <div class="skill-match-box matching">
+      <div class="match-label">✓ Matching Skills ({{ analysis.matching_skills|length }})</div>
+      <div>
+        {% for s in analysis.matching_skills %}
+          <span class="skill-tag">{{ s }}</span>
+        {% else %}
+          <span style="color:var(--muted2);font-size:13px;">None matched yet.</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Missing -->
+    <div class="skill-match-box missing">
+      <div class="match-label">✕ Missing Skills ({{ analysis.missing_skills|length }})</div>
+      <div>
+        {% for s in analysis.missing_skills %}
+          <span class="skill-tag">{{ s }}</span>
+        {% else %}
+          <span style="color:var(--muted2);font-size:13px;">No gaps — great match! 🎉</span>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Learning Path -->
+    {% if analysis.learning_path %}
+    <div class="card" style="margin-top:16px;">
+      <h3 class="card-title">📚 Suggested Learning Path</h3>
+      {% for step in analysis.learning_path %}
+      <div class="learning-step">
+        <div class="step-num">{{ loop.index }}</div>
+        <div class="step-text">{{ step | replace('Step ' ~ loop.index ~ ': ', '') }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="card" style="height:100%;display:flex;align-items:center;justify-content:center;">
+      <div class="empty-state">
+        <div class="empty-icon">◎</div>
+        <p class="empty-text">Analysis will appear here</p>
+        <p class="empty-sub">Paste a job description and click Analyze</p>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

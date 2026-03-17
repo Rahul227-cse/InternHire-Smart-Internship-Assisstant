@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — InternHire{% endblock %}
+{% block content %}
+
+<div class="page-header">
+  <h1 class="page-title">Good to see you, {{ current_user.profile.full_name.split()[0] if current_user.profile else current_user.username }} 👋</h1>
+  <p class="page-sub">Here's your internship hunt overview.</p>
+</div>
+
+<!-- Stats -->
+<div class="stats-grid">
+  <div class="stat-card" style="--card-accent: #6366F1;">
+    <div class="stat-card-icon" style="color:#6366F1;">
+      <i data-lucide="layers" width="26" height="26"></i>
+    </div>
+    <div class="stat-value">{{ stats.total_apps }}</div>
+    <div class="stat-label">Total Applied</div>
+  </div>
+  <div class="stat-card" style="--card-accent: #F59E0B;">
+    <div class="stat-card-icon" style="color:#F59E0B;">
+      <i data-lucide="video" width="26" height="26"></i>
+    </div>
+    <div class="stat-value">{{ stats.interviews }}</div>
+    <div class="stat-label">Interviews</div>
+  </div>
+  <div class="stat-card" style="--card-accent: #10B981;">
+    <div class="stat-card-icon" style="color:#10B981;">
+      <i data-lucide="check-circle" width="26" height="26"></i>
+    </div>
+    <div class="stat-value">{{ stats.offers }}</div>
+    <div class="stat-label">Offers</div>
+  </div>
+  <div class="stat-card" style="--card-accent: #EF4444;">
+    <div class="stat-card-icon" style="color:#EF4444;">
+      <i data-lucide="x-circle" width="26" height="26"></i>
+    </div>
+    <div class="stat-value">{{ stats.rejections }}</div>
+    <div class="stat-label">Rejected</div>
+  </div>
+</div>
+
+<div class="dash-grid" style="grid-template-columns: 1fr 1fr;">
+  <!-- Middle Column: Application Status Chart -->
+  <div class="card" style="padding: 32px 24px; min-height: 380px; display: flex; flex-direction: column;">
+    <h2 class="card-title" style="margin-bottom:24px;">Application Status Breakdown</h2>
+    <div style="flex: 1; position: relative; width:100%; display:flex; justify-content:center; align-items:center;">
+      <canvas id="statusChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Right column -->
+  <div style="display:flex;flex-direction:column;gap:20px;">
+    <!-- Skills snapshot -->
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h2 class="card-title" style="margin:0;">Your Skills</h2>
+        <a href="{{ url_for('routes.skills') }}" class="btn btn-ghost btn-sm">Manage →</a>
+      </div>
+      <div class="skill-pills">
+        {% set user_skills = current_user.skills %}
+        {% for skill in user_skills[:8] %}
+          <span class="skill-pill">{{ skill.name }}</span>
+        {% endfor %}
+        {% if user_skills|length > 8 %}
+          <span class="skill-pill" style="color:var(--muted);">+{{ user_skills|length - 8 }} more</span>
+        {% endif %}
+        {% if not user_skills %}
+          <span style="color:var(--muted2);font-size:14px;">No skills yet. <a href="{{ url_for('routes.skills') }}" class="auth-link">Add some →</a></span>
+        {% endif %}
+      </div>
+    </div>
+
+    <!-- Top Recommendations -->
+    {% if recommendations %}
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h2 class="card-title" style="margin:0;">Top Matches</h2>
+        <a href="{{ url_for('routes.recommendations') }}" class="btn btn-ghost btn-sm">All →</a>
+      </div>
+      {% for rec in recommendations %}
+      <div style="display:flex;align-items:center;gap:14px;padding:10px 0;border-bottom:1px solid var(--border);">
+        <div style="font-family:var(--font-mono);font-size:22px;font-weight:800;color:{% if rec.score >= 70 %}#10B981{% elif rec.score >= 40 %}#F59E0B{% else %}#EF4444{% endif %};min-width:52px;">{{ rec.score }}%</div>
+        <div>
+          <div style="font-weight:700;font-size:14px;">{{ rec.role }}</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:2px;">{{ rec.matches }} skills matched</div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const ctx = document.getElementById('statusChart').getContext('2d');
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    const legendColor = isLight ? '#475569' : '#94a3b8';
+
+    const chartData = {
+      labels: ['Applied', 'Interview', 'Rejected', 'Offer'],
+      datasets: [{
+        data: [
+          {{ stats.applied | default(0) }},
+          {{ stats.interviews | default(0) }},
+          {{ stats.rejections | default(0) }},
+          {{ stats.offers | default(0) }}
+        ],
+        backgroundColor: [
+          '#3B82F6',
+          '#F59E0B',
+          '#EF4444',
+          '#10B981'
+        ],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    };
+
+    const hasData = chartData.datasets[0].data.some(val => val > 0);
+
+    if (!hasData) {
+      document.getElementById('statusChart').style.display = 'none';
+      ctx.canvas.parentNode.innerHTML += '<p class="text-muted text-sm text-center" style="position:absolute;">No data to display yet.</p>';
+      return;
+    }
+
+    new Chart(ctx, {
+      type: 'doughnut',
+      data: chartData,
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: '75%',
+        layout: {
+          padding: { bottom: 20 }
+        },
+        plugins: {
+          legend: {
+            position: 'bottom',
+            labels: {
+              color: legendColor,
+              usePointStyle: true,
+              padding: 24,
+              font: {
+                family: "'Inter', 'DM Sans', sans-serif",
+                size: 13,
+                weight: 500
+              }
+            }
+          }
+        }
+      }
+    });
+  });
+</script>
+{% endblock %}
