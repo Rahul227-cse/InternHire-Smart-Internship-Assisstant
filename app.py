@@ -7,7 +7,10 @@ app = Flask(__name__)
 csrf = CSRFProtect(app)
 # Configurations
 app.config['SECRET_KEY'] = 'a_very_secret_key_for_internhire'
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///internhire.db'
+database_url = os.environ.get('DATABASE_URL', 'sqlite:///internhire.db')
+if database_url.startswith("postgres://"):
+    database_url = database_url.replace("postgres://", "postgresql://", 1)
+app.config['SQLALCHEMY_DATABASE_URI'] = database_url
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db.init_app(app)
