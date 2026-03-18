@@ -10,11 +10,23 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}"/>
   <script src="https://unpkg.com/lucide@latest"></script>
   <script>
+    // Prevent transition flashes on load
+    document.documentElement.classList.add('no-transition');
+    
     // Apply theme instantly before page render to prevent white flash
     const savedTheme = localStorage.getItem('theme') || 'dark';
     document.documentElement.setAttribute('data-theme', savedTheme);
+    
+    window.addEventListener('load', () => {
+      // Remove class once everything has fully loaded
+      document.documentElement.classList.remove('no-transition');
+    });
   </script>
   <style>
+    /* Prevent any CSS transitions from firing on page load */
+    .no-transition * {
+      transition: none !important;
+    }
     /* Prevent white flash during page load and add smooth transition */
     html { background-color: #0f172a; } /* Matches dark mode background */
     html[data-theme="light"] { background-color: #f8fafc; }
